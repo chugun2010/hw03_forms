@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
 {% block title %}
-  Главная страница|Yatube 
+  {{ 'Это главная страница этого замечательного сайта!' }}
 {% endblock %}
-{%block content%}
-  <h1>Последние обновления на сайте</h1> 
-    {% for post in page_obj  %}    
+{% block content %}
+  <div class="container py-5">
+    <p>Это главная страница этого замечательного сайта!</p>
+    {% for post in page_obj %}
       <article>
         <ul>
           <li>
@@ -13,15 +14,19 @@
           <li>
             Дата публикации: {{ post.pub_date|date:"d E Y" }}
           </li>
-        </ul>      
-        <p> {{post.text}} </p>
-          {% if post.group %}
-            <a href="{% url 'posts:group_list' post.group.slug %}">
-              Все записи группы
-            </a>
-          {%endif%}
+        </ul>
+        <p>{{ post.text|linebreaks }}</p>
+        {% if post.group %}   
+          <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы</a>
+        {% endif %}
+        <br>
+        <br>
+        <a href="{% url 'posts:post_detail' post.id %}">
+          подробная информация
+        </a>
       </article>
-      {% if not forloop.last %}<hr>{% endif %}
+      {% if not forloop.last %}<hr>{% endif %} 
     {% endfor %}
-  {% include 'includes/paginator.html' %}
+    {% include 'posts/includes/paginator.html' %}
+  </div>  
 {% endblock %}

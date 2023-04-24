@@ -1,61 +1,76 @@
-from django.db import models
-from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
-from ..models import Group, Post
-
-User = get_user_model()
 
 
-class StaticURLTests(TestCase):
-    def setUp(self):
-        self.guest_client = Client()
-        self.user = User.objects.create_user(username="HasNoName")
-        groupt = Group.objects.create(
-            title="2",
-            slug="2",
-            description="2",
+from ..models import Group, Post, User
+
+
+class PostModelTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='HasNoName')
+        cls.group = Group.objects.create(
+            title='Тестовая группа',
+            slug='test-slug',
+            description='Тестовый текст'
         )
+        cls.post = Post.objects.create(
+            text='Тестовый текст',
+            author=cls.user,
+            group=cls.group
+        )
+
+    def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-        self.po = Post(
-            text=models.TextField(verbose_name="132", help_text="132"),
-            pub_date=models.DateTimeField(auto_now_add=True),
-            author=self.user,
-            group=groupt,
-        )
-        self.po.save()
-        self.user2 = User.objects.create_user(username="HasNoName2")
-        self.authorized_client2 = Client()
-        self.authorized_client2.force_login(self.user2)
 
-    def test_homepage(self):
-        response = self.guest_client.get("/")
+    def test_home_url_exists_at_desired_location(self):
+        """Страница / доступна любому пользователю."""
+        response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
 
-    def test_grouppage(self):
-        response = self.guest_client.get("/group/2/")
-        self.assertEqual(response.status_code, 200)
+    def test_group_url_location(self):
+        """Страница / доступна любому пользователю."""
+        resource = self.client.get('/group/test_slag/')
+        self.assertEqual(resource.status_code, 200)
 
-    def test_profilepage(self):
-        response = self.guest_client.get("/profile/HasNoName/")
-        self.assertEqual(response.status_code, 200)
+    def test_profile_url_lacation(self):
+        """Страница / доступна любому пользователю."""
+        resource = self.client.get('/profile/test_author/')
+        self.assertEqual(resource.status_code, 200)
 
-    def test_postspage(self):
-        response = self.guest_client.get("/posts/1")
-        self.assertEqual(response.status_code, 200)
+    def test_post_id_url_location(self):
+        """Страница / доступна любому пользователю."""
+        resource = self.client.get(f'/posts/{self.post.id}/')
+        self.assertEqual(resource.status_code, 200)
 
-    def test_editpage_worng_user(self):
-        response = self.authorized_client2.get("/posts/1/edit/")
-        self.assertEqual(response.status_code, 302)
+    def test_edit_url_location(self):
+        """Страница / доступна автору поста."""
+        resource = self.authorized_client.get(f'/posts/{self.post.id}/edit/')
+        self.assertEqual(resource.status_code, 200)
 
-    def test_editpage_correct_user(self):
-        response = self.authorized_client.get("/posts/1/edit/")
-        self.assertEqual(response.status_code, 200)
+    def test_create_url_location(self):
+        """Страница / доступна авторизованому пользователю."""
+        resource = self.authorized_client.get('/create/')
+        self.assertEqual(resource.status_code, 200)
 
-    def test_createpage(self):
-        response = self.authorized_client.get("/create/")
-        self.assertEqual(response.status_code, 200)
+    def test_404_url_locations(self):
+        """Не доступная страница"""
+        resource = self.client.get('/404/')
+        self.assertEqual(resource.status_code, 404)
 
-    def test_unexistingpage(self):
-        response = self.guest_client.get("/unexisting_page/")
-        self.assertEqual(response.status_code, 404)
+    def test_urls_uses_correct_template(self):
+        """URL-адрес использует соответствующий шаблон."""
+        templates_url_names = {
+            '/': 'posts/index.html',
+            f'/group/{self.group.slug}/': 'posts/group_list.html',
+            f'/profile/{self.post.author}/': 'posts/profile.html',
+            f'/posts/{self.post.id}/': 'posts/post_detail.html',
+            f'/posts/{self.post.id}/edit/': 'posts/create_post.html',
+            '/create/': 'posts/create_post.html',
+        }
+
+        for address, templates in templates_url_names.items():
+            with self.subTest(address=address):
+                response = self.authorized_client.get(address)
+                self.assertTemplateUsed(response, templates)
