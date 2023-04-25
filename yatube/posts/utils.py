@@ -1,5 +1,5 @@
 from django.core.paginator import Paginator
-
+from django.conf import settings
 
 def get_page_context(request, post_list):
     paginator = Paginator(post_list, settings.POSTS_ON_PAGE)
