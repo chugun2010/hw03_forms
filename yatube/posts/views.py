@@ -18,7 +18,6 @@ def group_posts(request, slug):
     posts = group.posts.all()
     context = {
         'group': group,
-        'posts': posts,
         'page_obj': get_page_context(request, posts),
     }
     return render(request, 'posts/group_list.html', context)
